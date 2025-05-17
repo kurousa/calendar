@@ -38,6 +38,20 @@ enum Commands {
     },
 }
 
+enum MyError {
+    Io(std::io::Error),
+    Serde(serde_json::Error),
+}
+impl From<std::io::Error> for MyError {
+    fn from(err: std::io::Error) -> MyError {
+        MyError::Io(err)
+    }
+}
+impl From<serde_json::Error> for MyError {
+    fn from(err: serde_json::Error) -> MyError {
+        MyError::Serde(err)
+    }
+}
 #[derive(Parser)]
 struct Cli {
     #[command(subcommand)]
@@ -45,7 +59,7 @@ struct Cli {
 }
 const SCHEDULE_FILE: &str = "schedules.json";
 /// スケジュールファイル新規作成
-fn create_schedule_file() -> Result<(), std::io::Error> {
+fn create_schedule_file() -> Result<(), MyError> {
     let file = File::create(SCHEDULE_FILE)?;
     let writer = BufWriter::new(file);
     let empty_calendar = Calendar { schedules: vec![] };
@@ -54,16 +68,16 @@ fn create_schedule_file() -> Result<(), std::io::Error> {
 }
 
 /// スケジュールファイルを読み込む
-fn read_calendar() -> Result<Calendar, std::io::Error> {
+fn read_calendar() -> Result<Calendar, MyError> {
     let file = File::open(SCHEDULE_FILE)?;
     let reader = BufReader::new(file);
     Ok(serde_json::from_reader(reader).unwrap())
 }
 /// スケジュールファイルに書き込む
-fn save_calendar(calendar: &Calendar) -> Result<(), std::io::Error> {
+fn save_calendar(calendar: &Calendar) -> Result<(), MyError> {
     let file = File::create(SCHEDULE_FILE)?;
     let writer = BufWriter::new(file);
-    serde_json::to_writer(writer, calendar).unwrap();
+    serde_json::to_writer(writer, calendar)?;
     Ok(())
 }
 /// スケジュールの一覧を表示
