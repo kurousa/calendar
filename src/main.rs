@@ -60,10 +60,11 @@ fn read_calendar() -> Result<Calendar, std::io::Error> {
     Ok(serde_json::from_reader(reader).unwrap())
 }
 /// スケジュールファイルに書き込む
-fn save_calendar(calendar: &Calendar) {
-    let file = File::create(SCHEDULE_FILE).unwrap();
+fn save_calendar(calendar: &Calendar) -> Result<(), std::io::Error> {
+    let file = File::create(SCHEDULE_FILE)?;
     let writer = BufWriter::new(file);
     serde_json::to_writer(writer, calendar).unwrap();
+    Ok(())
 }
 /// スケジュールの一覧を表示
 fn show_schedule(calendar: &Calendar) {
