@@ -46,10 +46,10 @@ struct Cli {
 const SCHEDULE_FILE: &str = "schedules.json";
 
 /// スケジュールファイルを読み込む
-fn read_calendar() -> Calendar {
-    let file = File::open(SCHEDULE_FILE).unwrap();
+fn read_calendar() -> Result<Calendar, std::io::Error> {
+    let file = File::open(SCHEDULE_FILE)?;
     let reader = BufReader::new(file);
-    serde_json::from_reader(reader).unwrap()
+    Ok(serde_json::from_reader(reader).unwrap())
 }
 /// スケジュールファイルに書き込む
 fn save_calendar(calendar: &Calendar) {
@@ -115,32 +115,42 @@ fn main() {
     let options = Cli::parse();
 
     match options.command {
-        Commands::List => {
-            let calendar = read_calendar();
-            show_schedule(&calendar)
-        }
+        Commands::List => match read_calendar() {
+            Ok(calendar) => show_schedule(&calendar),
+            Err(_) => {
+                println!("カレンダーの読み込みエラーが発生しました、ファイル{SCHEDULE_FILE}が存在しないか、権限がありません。");
+            }
+        },
         Commands::Add {
             subject,
             start,
             end,
-        } => {
-            let mut calendar = read_calendar();
-            if add_schedule(&mut calendar, subject, start, end) {
-                save_calendar(&calendar);
-                println!("予定を追加しました");
-            } else {
-                println!("予定を追加できませんでした");
+        } => match read_calendar() {
+            Ok(mut calendar) => {
+                if add_schedule(&mut calendar, subject, start, end) {
+                    save_calendar(&calendar);
+                    println!("予定を追加しました");
+                } else {
+                    println!("予定を追加できませんでした");
+                }
             }
-        }
-        Commands::Delete { id } => {
-            let mut calendar = read_calendar();
-            if delete_schedule(&mut calendar, id) {
-                save_calendar(&calendar);
-                println!("予定を削除しました");
-            } else {
-                println!("予定を削除できませんでした");
+            Err(_) => {
+                println!("カレンダーの読み込みエラーが発生しました、ファイル{SCHEDULE_FILE}が存在しないか、権限がありません。");
             }
-        }
+        },
+        Commands::Delete { id } => match read_calendar() {
+            Ok(mut calendar) => {
+                if delete_schedule(&mut calendar, id) {
+                    save_calendar(&calendar);
+                    println!("予定を削除しました");
+                } else {
+                    println!("予定を削除できませんでした");
+                }
+            }
+            Err(_) => {
+                println!("カレンダーの読み込みエラーが発生しました、ファイル{SCHEDULE_FILE}が存在しないか、権限がありません。");
+            }
+        },
     }
 }
 
