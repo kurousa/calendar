@@ -44,6 +44,14 @@ struct Cli {
     command: Commands,
 }
 const SCHEDULE_FILE: &str = "schedules.json";
+/// スケジュールファイル新規作成
+fn create_schedule_file() -> Result<(), std::io::Error> {
+    let file = File::create(SCHEDULE_FILE)?;
+    let writer = BufWriter::new(file);
+    let empty_calendar = Calendar { schedules: vec![] };
+    serde_json::to_writer(writer, &empty_calendar)?;
+    Ok(())
+}
 
 /// スケジュールファイルを読み込む
 fn read_calendar() -> Result<Calendar, std::io::Error> {
