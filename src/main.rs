@@ -137,20 +137,39 @@ fn main() {
         } => match read_calendar() {
             Ok(mut calendar) => {
                 if add_schedule(&mut calendar, subject, start, end) {
-                    save_calendar(&calendar);
-                    println!("予定を追加しました");
+                    match save_calendar(&calendar) {
+                        Ok(_) => println!("予定を保存しました"),
+                        Err(_) => println!("予定の保存に失敗しました"),
+                    };
                 } else {
                     println!("予定を追加できませんでした");
                 }
             }
-            Err(_) => {
-                println!("カレンダーの読み込みエラーが発生しました、ファイル{SCHEDULE_FILE}が存在しないか、権限がありません。");
-            }
+            Err(_) => match create_schedule_file() {
+                Ok(_) => {
+                    println!("既存のカレンダーが存在しないため、新しいカレンダーを作成しました。");
+                    let mut calendar = Calendar { schedules: vec![] };
+                    if add_schedule(&mut calendar, subject, start, end) {
+                        match save_calendar(&calendar) {
+                            Ok(_) => println!("予定を保存しました"),
+                            Err(_) => println!("予定の保存に失敗しました"),
+                        };
+                    } else {
+                        println!("予定を追加できませんでした");
+                    }
+                }
+                Err(_) => {
+                    println!("カレンダーの作成エラーが発生しました");
+                }
+            },
         },
         Commands::Delete { id } => match read_calendar() {
             Ok(mut calendar) => {
                 if delete_schedule(&mut calendar, id) {
-                    save_calendar(&calendar);
+                    match save_calendar(&calendar) {
+                        Ok(_) => println!("予定を保存しました"),
+                        Err(_) => println!("予定の保存に失敗しました"),
+                    };
                     println!("予定を削除しました");
                 } else {
                     println!("予定を削除できませんでした");
